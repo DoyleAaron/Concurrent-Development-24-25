@@ -1,4 +1,3 @@
-# To run this program, you can run the file through the terminal with python
 
 # This function finds the double values and removes them from the roman numeral list
 def find_doubles(romanNumList, totalAmount):
