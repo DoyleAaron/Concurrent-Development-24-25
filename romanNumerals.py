@@ -94,11 +94,22 @@ def calculate_rest(romanNumList, totalAmount):
 
     return totalAmount
 
-romanNum = input("Enter your roman numeral: ")
-romanNum = romanNum.lower()
-romanNumList = list(romanNum)
+romanNum = input("Enter your roman numeral: ").lower()
+valid_letters = {'i', 'v', 'x', 'l', 'c', 'd', 'm'}
 
-totalAmount = 0
-romanNumList, totalAmount = find_doubles(romanNumList, totalAmount)
-finalAmount = calculate_rest(romanNumList, totalAmount)
-print(finalAmount)
+# Check for invalid characters and alert the user
+if not set(romanNum).issubset(valid_letters):
+    print("Invalid input, please enter a valid roman numeral containing only: i, v, x, l, c, d, m.")
+else:
+    romanNumList = list(romanNum)
+
+    if len(romanNum) > 15:
+        print("This input is too long.")
+    else:
+        totalAmount = 0
+        romanNumList, totalAmount = find_doubles(romanNumList, totalAmount)
+        finalAmount = calculate_rest(romanNumList, totalAmount)
+        if finalAmount >= 4000:
+            print("This number is too big, number has to be between 1 - 3999")
+        else:
+            print(finalAmount)
