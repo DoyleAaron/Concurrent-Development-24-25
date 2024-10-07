@@ -21,11 +21,25 @@ import (
 )
 
 // Place a barrier in this function --use Mutex's and Semaphores
-func doStuff(goNum int, wg *sync.WaitGroup) bool {
+func doStuff(goNum int, wg *sync.WaitGroup, theLock *sync.Mutex, count *int, theSem *semaphore.Weighted, ctx context.Context) bool {
 	time.Sleep(time.Second)
 	fmt.Println("Part A", goNum)
+	theLock.Lock()
+	*count++
+	if *count == max {
+		theLock.Unlock()
+		theChan <- true
+		<-theChan
+	} else {
+		theLock.Unlock()
+		<-theChan
+		theChan <- true
+	}
 	//we wait here until everyone has completed part A
-	fmt.Println("PartB", goNum)
+	theLock.Lock()
+	*count--
+	theLock.Unlock()
+	fmt.Println("Part B", goNum)
 	wg.Done()
 	return true
 }
@@ -40,8 +54,12 @@ func main() {
 	sem := semaphore.NewWeighted(int64(totalRoutines))
 	theLock.Lock()
 	sem.Acquire(ctx, 1)
+	count := 0
 	for i := range totalRoutines { //create the go Routines here
-		go doStuff(i, &wg)
+		go doStuff(i, &wg, &theLock, &count, sem, ctx)
+		if count > 9 {
+			i = 0
+		}
 	}
 	sem.Release(1)
 	theLock.Unlock()
