@@ -30,6 +30,25 @@ import (
 	"sync"
 )
 
+// Create a barrier data type
+type barrier struct {
+	theChan chan bool
+	theLock sync.Mutex
+	total   int
+	count   int
+}
+
+// creates a properly initialised barrier
+// N== number of threads (go Routines)
+func createBarrier(N int) barrier {
+	theBarrier := barrier{
+		theChan: make(chan bool),
+		total:   N,
+		count:   0,
+	}
+	return theBarrier
+}
+
 func producer() {
 
 }
@@ -42,7 +61,7 @@ func main() {
 	totalRoutines := 10
 	var wg sync.WaitGroup
 	wg.Add(totalRoutines)
-
+	barrier := createBarrier(5)
 	for i := 1; i < totalRoutines; i++ {
 
 	}
