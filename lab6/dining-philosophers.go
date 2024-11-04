@@ -2,7 +2,7 @@
 // See readme for license
 //--------------------------------------------
 // Author: Joseph Kehoe
-// Created on 21/10/2024
+// Created on 4/11/2024
 // Modified by: Aaron Doyle
 // Description:
 // Solving the dining philosophers problem
@@ -66,5 +66,4 @@ func main() {
 		go doPhilStuff(N, &wg, forks)
 	} //start philosophers
 	wg.Wait() //wait here until everyone (10 go routines) is done
-
-} //main
+}

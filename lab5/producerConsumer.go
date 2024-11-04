@@ -1,3 +1,15 @@
+//producerConsumer.go code
+// See readme for license
+//--------------------------------------------
+// Author: Joseph Kehoe
+// Created on 5/11/2024
+// Modified by: Aaron Doyle
+// Description:
+// Solving the prodcuer consumer problem
+// Issues:
+// Make sure that the producer isn't adding to the channel when it is full and the consumer isn't consuming from the channel when it is empty
+//--------------------------------------------
+
 package main
 
 import (
@@ -54,7 +66,7 @@ func consumer(barrier *barrier, wg *sync.WaitGroup) {
 func main() {
 	totalRoutines := 10
 	var wg sync.WaitGroup
-	wg.Add(totalRoutines)
+	wg.Add(totalRoutines)       // Add the total number of routines to the wait group
 	barrier := createBarrier(5) // Create a barrier with a total of 5 items
 
 	for i := 0; i < totalRoutines; i++ {
