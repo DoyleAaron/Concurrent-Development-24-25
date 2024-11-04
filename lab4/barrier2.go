@@ -58,6 +58,7 @@ func doStuff(goNum int, arrived *int, max int, wg *sync.WaitGroup, sharedLock *s
 
 func main() {
 	totalRoutines := 10
+	max := 5
 	arrived := 0
 	var wg sync.WaitGroup
 	wg.Add(totalRoutines)
@@ -65,7 +66,7 @@ func main() {
 	var theLock sync.Mutex
 	theChan := make(chan bool)     //use unbuffered channel in place of semaphore
 	for i := range totalRoutines { //create the go Routines here
-		go doStuff(i, &arrived, totalRoutines, &wg, &theLock, theChan)
+		go doStuff(i, &arrived, max, &wg, &theLock, theChan)
 	}
 	wg.Wait() //wait for everyone to finish before exiting
 } //end-main
