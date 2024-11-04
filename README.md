@@ -2,12 +2,10 @@
 ## To run the roman numerals file, you can run it through the terminal using the command 'python romanNumerals.py' 
 
 ##### Lab 3   
-## This is a go example of a barrier that prints a's and b's consecutively
-## To run this file navigate to the lab 3 folder and run the command go run barrier.go
+## This is a go example of a barrier that prints a's and b's consecutively. To run this file navigate to the lab 3 folder and run the command go run barrier.go
 
 ##### Lab 4   
-## This is a continuation of the previous lab where I am making the barrier reusable
-## To run this file navigate to the lab 4 folder and run the command go run barrier.go
+## This is a continuation of the previous lab where I am making the barrier reusable. To run this file navigate to the lab 4 folder and run the command go run barrier.go
 
 ##### License 
 ## Copyright (C) 2024 Mr. Aaron Doyle
