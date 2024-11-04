@@ -20,7 +20,7 @@ import (
 )
 
 // Place a barrier in this function --use Mutex's and Semaphores
-func doStuff(goNum int, wg *sync.WaitGroup, theLock *sync.Mutex, count *int, theSem *semaphore.Weighted, ctx context.Context) bool {
+func doStuff(goNum int, wg *sync.WaitGroup, theLock *sync.Mutex, count *int, theSem *semaphore.Weighted, ctx context.Context, theChan chan bool, max int) bool {
 	time.Sleep(time.Second)
 	fmt.Println("Part A", goNum)
 	theLock.Lock()
@@ -46,16 +46,18 @@ func doStuff(goNum int, wg *sync.WaitGroup, theLock *sync.Mutex, count *int, the
 func main() {
 	totalRoutines := 10
 	var wg sync.WaitGroup
+	max := 5
 	wg.Add(totalRoutines)
 	//we will need some of these
 	ctx := context.TODO()
 	var theLock sync.Mutex
+	theChan := make(chan bool)
 	sem := semaphore.NewWeighted(int64(totalRoutines))
 	theLock.Lock()
 	sem.Acquire(ctx, 1)
 	count := 0
 	for i := range totalRoutines { //create the go Routines here
-		go doStuff(i, &wg, &theLock, &count, sem, ctx)
+		go doStuff(i, &wg, &theLock, &count, sem, ctx, theChan, max)
 		if count > 9 {
 			i = 0
 		}

@@ -1,4 +1,4 @@
-module lab3
+module sem-ex.go
 
 go 1.23.1
 
