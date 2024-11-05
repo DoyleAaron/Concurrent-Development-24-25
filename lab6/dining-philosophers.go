@@ -30,7 +30,7 @@ func eat(index int) {
 	var X time.Duration
 	X = time.Duration(rand.Intn(2)) // Random time amount to simulate eating
 	time.Sleep(X * time.Second)     //wait random time amount
-	fmt.Println("Philosopher", index, "was eating")
+	fmt.Println("Phil:", index, "was eating")
 }
 
 func getForks(index int, forks map[int]chan bool) {
