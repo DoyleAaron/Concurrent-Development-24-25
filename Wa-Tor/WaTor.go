@@ -13,6 +13,8 @@
 package main
 
 import (
+	"math/rand"
+
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -24,14 +26,18 @@ func main() {
 	windowYSize := 600
 	cellXSize := windowXSize / xdim
 	cellYSize := windowYSize / ydim
+	// NumShark := 100
+	// NumFish := 100
+	// FishBreed := 3
+	// SharkBreed := 3
+	// Starve := 3
 
 	// Initialize the window
 	rl.InitWindow(int32(windowXSize), int32(windowYSize), "Raylib Wa-Tor world")
 	defer rl.CloseWindow() // Close window when done
 
-	// Loop to draw the rectangles
+	// Loop to draw the rectangles that keeps going until the escape key is pressed
 	for !rl.WindowShouldClose() {
-		// Start drawing
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.Black)
 
@@ -42,14 +48,11 @@ func main() {
 				recY := float32(k * cellYSize)
 				recWidth := float32(80)  // Width of the rectangle
 				recHeight := float32(60) // Height of the rectangle
-				id := i*1 - k
+				//id := i*1 - k
 
-				// Set color based on the ID
-				var color rl.Color
-				if id%2 == 0 {
-					color = rl.Green // Fish
-				} else {
-					color = rl.Blue // Empty space
+				color := rl.Green
+				if rand.Intn(2) == 0 {
+					color = rl.Blue
 				}
 
 				// Draw the rectangle
