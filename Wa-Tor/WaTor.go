@@ -13,8 +13,6 @@
 package main
 
 import (
-	"math/rand"
-
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -44,23 +42,29 @@ func main() {
 		// Draw rectangles (each representing a fish, shark, or empty space)
 		for i := 0; i < xdim; i++ {
 			for k := 0; k < ydim; k++ {
-				recX := float32(i * cellXSize)
-				recY := float32(k * cellYSize)
-				recWidth := float32(80)  // Width of the rectangle
-				recHeight := float32(60) // Height of the rectangle
-				//id := i*1 - k
+				fishX := float32(i * cellXSize)  // X position of the fish
+				fishY := float32(k * cellYSize)  // Y position of the fish
+				sharkX := float32(i * cellXSize) // X position of the shark
+				sharkY := float32(k * cellYSize) // Y position of the shark
+				Width := float32(80)             // Width of the rectangle
+				Height := float32(60)            // Height of the rectangle
+				fishColour := rl.Green
+				sharkColour := rl.Blue
 
-				color := rl.Green
-				if rand.Intn(2) == 0 {
-					color = rl.Blue
+				if(){
+					
 				}
-
-				// Draw the rectangle
-				rl.DrawRectangle(int32(recX), int32(recY), int32(recWidth), int32(recHeight), color)
-			}
 		}
 
 		// End drawing and display the window
 		rl.EndDrawing()
 	}
+}
+
+func drawFish(fishX, fishY, Width, Height float32, fishColour rl.Color) {
+	rl.DrawRectangle(int32(fishX), int32(fishY), int32(Width), int32(Height), fishColour)
+}
+
+func drawShark(sharkX, sharkY, Width, Height float32, sharkColour rl.Color) {
+	rl.DrawRectangle(int32(sharkX), int32(sharkY), int32(Width), int32(Height), sharkColour)
 }
