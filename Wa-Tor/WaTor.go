@@ -278,11 +278,11 @@ func main() {
 	windowYSize := 600
 	cellXSize := windowXSize / xdim
 	cellYSize := windowYSize / ydim
-	NumShark := 200
-	NumFish := 200
+	NumShark := 500
+	NumFish := 100
 	Starve := 1000
-	SharkBreed := 8
-	FishBreed := 12
+	SharkBreed := 20
+	FishBreed := 22
 
 	// Colors
 	fishColour := rl.Green
