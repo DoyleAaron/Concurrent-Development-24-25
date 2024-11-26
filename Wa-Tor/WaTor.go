@@ -15,10 +15,20 @@ package main
 
 import (
 	"math/rand"
-	"time"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
+
+// Cell struct
+// Parameters: Type, BreedTime, StarveTime
+// Returns: None
+// Description: This is to give the cells in the grid a type, breed time and starve time
+type Cell struct {
+	Type             int
+	BreedTime        int
+	StarveTime       int
+	CurrentBreedTime int
+}
 
 // DrawFish function
 // Parameters: x, y, width, height int, fishColour rl.Color
@@ -46,101 +56,170 @@ func DrawWater(x, y, width, height int, waterColour rl.Color) {
 
 // InitialPositions function
 // Parameters: xdim, ydim, NumShark, NumFish int
-// Returns: grid []int
+// Returns: grid [][]Cell
 // Description: Initializes the positions of the fish and sharks in the grid so that they are randomly placed around the grid
-func InitialPositions(xdim, ydim, NumShark, NumFish int) []int {
+func InitialPositions(xdim, ydim, NumShark int, NumFish int, Starve int, FishBreed int, SharkBreed int) [][]Cell {
 
 	// ChatGPT helped me with the grid part of the code as I was confused as to how to initially set the fish and shark positions
-	// It works by creating a grid with the dimensions of xdim and ydim and the number of sharks and fish, and then shuffling the grid to simulate randomly placing the fish and sharks around the screen
-	grid := make([]int, xdim*ydim)
-	for i := 0; i < NumShark; i++ {
-		grid[i] = 1 // 1 represents sharks
+	// It works by creating a grid with the dimensions of xdim and ydim and the number of sharks and fish, then it creates a 1D slice to represent the flattened grid for random placement.
+	// Once the fish and sharks are placed, it maps the flat grid back into the 2D grid so it can be displayed
+	grid := make([][]Cell, ydim)
+	for i := 0; i < ydim; i++ {
+		grid[i] = make([]Cell, xdim)
 	}
+
+	// Create a 1D slice to represent the flattened grid for random placement
+	flatGrid := make([]Cell, xdim*ydim)
+
+	for i := 0; i < NumShark; i++ {
+		flatGrid[i] = Cell{Type: 1, BreedTime: SharkBreed, StarveTime: Starve, CurrentBreedTime: 0} // 1 represents sharks
+	}
+
 	for i := NumShark; i < NumShark+NumFish; i++ {
-		grid[i] = 2 // 2 represents fish
+		flatGrid[i] = Cell{Type: 2, BreedTime: FishBreed, CurrentBreedTime: 0} // 2 represents fish
 	}
 
 	// This mixes up the order of the grid to simulate randomly placing the fish and sharks around the screen
-	rand.Shuffle(len(grid), func(i, j int) { grid[i], grid[j] = grid[j], grid[i] })
+	rand.Shuffle(len(flatGrid), func(i, j int) { flatGrid[i], flatGrid[j] = flatGrid[j], flatGrid[i] })
+
+	// Map the flat grid back into the 2D grid
+	for i := 0; i < ydim; i++ {
+		for j := 0; j < xdim; j++ {
+			grid[i][j] = flatGrid[i*xdim+j]
+		}
+	}
 
 	return grid
 }
 
 // UpdatePositions function
-// Parameters: grid []int, xdim, ydim int (current grid)
-// Returns: newGrid []int (updated grid)
+// Parameters: grid [][]Cell, xdim, ydim int (current grid)
+// Returns: newGrid [][]Cell (updated grid)
 // Description: Updates the positions of the fish and sharks based off of the rules in the specification
-func UpdatePositions(grid []int, xdim, ydim int) []int {
+func UpdatePositions(grid [][]Cell, xdim, ydim int) [][]Cell {
 	// Create a new grid to store the updated positions of the fish and sharks
-	newGrid := make([]int, xdim*ydim)
+	newGrid := make([][]Cell, ydim)
+	for i := 0; i < ydim; i++ {
+		newGrid[i] = make([]Cell, xdim)
+		copy(newGrid[i], grid[i])
+	}
+
 	for i := 0; i < xdim; i++ {
 		for j := 0; j < ydim; j++ {
-			// Get the current cell value
-			cellValue := grid[j*xdim+i] // ChatGPT gave me this calculation to get the current cell value in a 2D array
+			currentCell := grid[j][i] // Get the current cell and its information
 
-			// Check if the cell value is a shark
-			if cellValue == 1 {
+			// Check if the cell contains a shark
+			if currentCell.Type == 1 {
+				// Check if the shark starves
+				if currentCell.StarveTime <= 0 {
+					newGrid[j][i] = Cell{Type: 0} // The shark has starved and is removed from the grid
+					continue                      // Skip further processing for this shark
+				}
+
 				moved := false
 
 				// Check if there is a fish to the north
-				if j > 0 && grid[(j-1)*xdim+i] == 2 {
-					newGrid[(j-1)*xdim+i] = 1 // Move shark north
-					newGrid[j*xdim+i] = 0     // Turn current position to water
+				if j > 0 && grid[j-1][i].Type == 2 && !moved {
+					newGrid[j-1][i] = Cell{
+						Type:             1,
+						BreedTime:        currentCell.BreedTime,
+						StarveTime:       currentCell.StarveTime + 3, // Reset starvation timer
+						CurrentBreedTime: currentCell.CurrentBreedTime + 1,
+					}
+					newGrid[j][i] = Cell{Type: 0} // Turn current position into water
 					moved = true
 				}
 
 				// Check if there is a fish to the east
-				if i < xdim-1 && grid[j*xdim+(i+1)] == 2 {
-					newGrid[j*xdim+(i+1)] = 1 // Move shark east
-					newGrid[j*xdim+i] = 0     // Turn current position to water
+				if i < xdim-1 && grid[j][i+1].Type == 2 && !moved {
+					newGrid[j][i+1] = Cell{
+						Type:             1,
+						BreedTime:        currentCell.BreedTime,
+						StarveTime:       currentCell.StarveTime + 3, // Reset starvation timer
+						CurrentBreedTime: currentCell.CurrentBreedTime + 1,
+					}
+					newGrid[j][i] = Cell{Type: 0} // Turn current position into water
 					moved = true
 				}
 
 				// Check if there is a fish to the south
-				if j < ydim-1 && grid[(j+1)*xdim+i] == 2 {
-					newGrid[(j+1)*xdim+i] = 1 // Move shark south
-					newGrid[j*xdim+i] = 0     // Turn current position to water
+				if j < ydim-1 && grid[j+1][i].Type == 2 && !moved {
+					newGrid[j+1][i] = Cell{
+						Type:             1,
+						BreedTime:        currentCell.BreedTime,
+						StarveTime:       currentCell.StarveTime + 3, // Reset starvation timer
+						CurrentBreedTime: currentCell.CurrentBreedTime + 1,
+					}
+					newGrid[j][i] = Cell{Type: 0} // Turn current position into water
 					moved = true
 				}
 
 				// Check if there is a fish to the west
-				if i > 0 && grid[j*xdim+(i-1)] == 2 {
-					newGrid[j*xdim+(i-1)] = 1 // Move shark west
-					newGrid[j*xdim+i] = 0     // Turn current position to water
+				if i > 0 && grid[j][i-1].Type == 2 && !moved {
+					newGrid[j][i-1] = Cell{
+						Type:             1,
+						BreedTime:        currentCell.BreedTime,
+						StarveTime:       currentCell.StarveTime + 3, // Reset starvation timer
+						CurrentBreedTime: currentCell.CurrentBreedTime + 1,
+					}
+					newGrid[j][i] = Cell{Type: 0} // Turn current position into water
 					moved = true
 				}
 
-				// If the shark hasn't moved, move it in a random direction
+				// If the shark hasn't moved, decrement its StarveTime and handle breeding/moving
 				if !moved {
-					randDir := rand.Intn(3)
+					freeSpace := []struct{ x, y int }{}
 
-					if randDir == 0 && j > 0 {
-						newGrid[(j-1)*xdim+i] = 1 // Move shark north
-						newGrid[j*xdim+i] = 0     // Turn current position to water
+					// Check for empty cells around the shark
+					if j > 0 && grid[j-1][i].Type == 0 {
+						freeSpace = append(freeSpace, struct{ x, y int }{i, j - 1})
+					}
+					if i < xdim-1 && grid[j][i+1].Type == 0 {
+						freeSpace = append(freeSpace, struct{ x, y int }{i + 1, j})
+					}
+					if j < ydim-1 && grid[j+1][i].Type == 0 {
+						freeSpace = append(freeSpace, struct{ x, y int }{i, j + 1})
+					}
+					if i > 0 && grid[j][i-1].Type == 0 {
+						freeSpace = append(freeSpace, struct{ x, y int }{i - 1, j})
 					}
 
-					if randDir == 1 && i < xdim-1 {
-						newGrid[j*xdim+(i+1)] = 1 // Move shark east
-						newGrid[j*xdim+i] = 0     // Turn current position to water
-					}
+					if len(freeSpace) > 0 {
+						randDirection := rand.Intn(len(freeSpace))
+						chosenDirection := freeSpace[randDirection]
 
-					if randDir == 2 && j < ydim-1 {
-						newGrid[(j+1)*xdim+i] = 1 // Move shark south
-						newGrid[j*xdim+i] = 0     // Turn current position to water
-					}
-
-					if randDir == 3 && i > 0 {
-						newGrid[j*xdim+(i-1)] = 1 // Move shark west
-						newGrid[j*xdim+i] = 0     // Turn current position to water
+						// Handle breeding or moving
+						if currentCell.CurrentBreedTime == currentCell.BreedTime {
+							newGrid[chosenDirection.y][chosenDirection.x] = Cell{
+								Type:             1,
+								BreedTime:        currentCell.BreedTime,
+								StarveTime:       currentCell.StarveTime,
+								CurrentBreedTime: 0, // Reset breed time
+							}
+							newGrid[j][i] = Cell{
+								Type:             1,
+								BreedTime:        currentCell.BreedTime,
+								StarveTime:       currentCell.StarveTime - 1, // Decrement starvation timer
+								CurrentBreedTime: 0,
+							}
+						} else {
+							newGrid[chosenDirection.y][chosenDirection.x] = Cell{
+								Type:             1,
+								BreedTime:        currentCell.BreedTime,
+								StarveTime:       currentCell.StarveTime - 1, // Decrement starvation timer
+								CurrentBreedTime: currentCell.CurrentBreedTime + 1,
+							}
+							newGrid[j][i] = Cell{Type: 0}
+						}
+					} else {
+						// Decrement StarveTime if the shark hasn't moved
+						newGrid[j][i].StarveTime--
 					}
 				}
 			}
 		}
 	}
-
-	// Return the updated grid
 	return newGrid
-
 }
 
 // Main Class
@@ -153,8 +232,11 @@ func main() {
 	windowYSize := 600
 	cellXSize := windowXSize / xdim
 	cellYSize := windowYSize / ydim
-	NumShark := 20
+	NumShark := 50
 	NumFish := 500
+	Starve := 50
+	SharkBreed := 10
+	FishBreed := 3
 
 	// Colors
 	fishColour := rl.Green
@@ -166,7 +248,7 @@ func main() {
 	defer rl.CloseWindow() // Ensure the window is closed on exit
 
 	// Initialize grid
-	grid := InitialPositions(xdim, ydim, NumShark, NumFish)
+	grid := InitialPositions(xdim, ydim, NumShark, NumFish, Starve, FishBreed, SharkBreed)
 
 	// Simulation loop
 	for !rl.WindowShouldClose() {
@@ -180,13 +262,13 @@ func main() {
 			for j := 0; j < ydim; j++ {
 				x := i * cellXSize
 				y := j * cellYSize
-				cellValue := grid[j*xdim+i]
+				cell := grid[j][i]
 
-				if cellValue == 1 {
+				if cell.Type == 1 { // Shark
 					DrawShark(x, y, cellXSize, cellYSize, sharkColour)
-				} else if cellValue == 2 {
+				} else if cell.Type == 2 { // Fish
 					DrawFish(x, y, cellXSize, cellYSize, fishColour)
-				} else {
+				} else { // Water
 					DrawWater(x, y, cellXSize, cellYSize, waterColour)
 				}
 			}
@@ -197,6 +279,5 @@ func main() {
 
 		rl.EndDrawing()
 
-		time.Sleep(100 * time.Millisecond)
 	}
 }
