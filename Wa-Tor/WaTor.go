@@ -15,6 +15,7 @@ package main
 
 import (
 	"math/rand"
+	"time"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -72,7 +73,6 @@ func InitialPositions(xdim, ydim, NumShark, NumFish int) []int {
 func UpdatePositions(grid []int, xdim, ydim int) []int {
 	// Create a new grid to store the updated positions of the fish and sharks
 	newGrid := make([]int, xdim*ydim)
-
 	for i := 0; i < xdim; i++ {
 		for j := 0; j < ydim; j++ {
 			// Get the current cell value
@@ -80,7 +80,60 @@ func UpdatePositions(grid []int, xdim, ydim int) []int {
 
 			// Check if the cell value is a shark
 			if cellValue == 1 {
+				moved := false
 
+				// Check if there is a fish to the north
+				if j > 0 && grid[(j-1)*xdim+i] == 2 {
+					newGrid[(j-1)*xdim+i] = 1 // Move shark north
+					newGrid[j*xdim+i] = 0     // Turn current position to water
+					moved = true
+				}
+
+				// Check if there is a fish to the east
+				if i < xdim-1 && grid[j*xdim+(i+1)] == 2 {
+					newGrid[j*xdim+(i+1)] = 1 // Move shark east
+					newGrid[j*xdim+i] = 0     // Turn current position to water
+					moved = true
+				}
+
+				// Check if there is a fish to the south
+				if j < ydim-1 && grid[(j+1)*xdim+i] == 2 {
+					newGrid[(j+1)*xdim+i] = 1 // Move shark south
+					newGrid[j*xdim+i] = 0     // Turn current position to water
+					moved = true
+				}
+
+				// Check if there is a fish to the west
+				if i > 0 && grid[j*xdim+(i-1)] == 2 {
+					newGrid[j*xdim+(i-1)] = 1 // Move shark west
+					newGrid[j*xdim+i] = 0     // Turn current position to water
+					moved = true
+				}
+
+				// If the shark hasn't moved, move it in a random direction
+				if !moved {
+					randDir := rand.Intn(3)
+
+					if randDir == 0 && j > 0 {
+						newGrid[(j-1)*xdim+i] = 1 // Move shark north
+						newGrid[j*xdim+i] = 0     // Turn current position to water
+					}
+
+					if randDir == 1 && i < xdim-1 {
+						newGrid[j*xdim+(i+1)] = 1 // Move shark east
+						newGrid[j*xdim+i] = 0     // Turn current position to water
+					}
+
+					if randDir == 2 && j < ydim-1 {
+						newGrid[(j+1)*xdim+i] = 1 // Move shark south
+						newGrid[j*xdim+i] = 0     // Turn current position to water
+					}
+
+					if randDir == 3 && i > 0 {
+						newGrid[j*xdim+(i-1)] = 1 // Move shark west
+						newGrid[j*xdim+i] = 0     // Turn current position to water
+					}
+				}
 			}
 		}
 	}
@@ -101,7 +154,7 @@ func main() {
 	cellXSize := windowXSize / xdim
 	cellYSize := windowYSize / ydim
 	NumShark := 20
-	NumFish := 100
+	NumFish := 500
 
 	// Colors
 	fishColour := rl.Green
@@ -140,8 +193,10 @@ func main() {
 		}
 
 		// Update the grid
-		//grid = UpdatePositions(grid, xdim, ydim)
+		grid = UpdatePositions(grid, xdim, ydim)
 
 		rl.EndDrawing()
+
+		time.Sleep(100 * time.Millisecond)
 	}
 }
