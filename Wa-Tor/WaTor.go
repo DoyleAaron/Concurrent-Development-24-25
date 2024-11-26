@@ -43,7 +43,55 @@ func DrawWater(x, y, width, height int, waterColour rl.Color) {
 	rl.DrawRectangle(int32(x), int32(y), int32(width), int32(height), waterColour)
 }
 
+// InitialPositions function
+// Parameters: xdim, ydim, NumShark, NumFish int
+// Returns: grid []int
+// Description: Initializes the positions of the fish and sharks in the grid so that they are randomly placed around the grid
+func InitialPositions(xdim, ydim, NumShark, NumFish int) []int {
+
+	// ChatGPT helped me with the grid part of the code as I was confused as to how to initially set the fish and shark positions
+	// It works by creating a grid with the dimensions of xdim and ydim and the number of sharks and fish, and then shuffling the grid to simulate randomly placing the fish and sharks around the screen
+	grid := make([]int, xdim*ydim)
+	for i := 0; i < NumShark; i++ {
+		grid[i] = 1 // 1 represents sharks
+	}
+	for i := NumShark; i < NumShark+NumFish; i++ {
+		grid[i] = 2 // 2 represents fish
+	}
+
+	// This mixes up the order of the grid to simulate randomly placing the fish and sharks around the screen
+	rand.Shuffle(len(grid), func(i, j int) { grid[i], grid[j] = grid[j], grid[i] })
+
+	return grid
+}
+
+// UpdatePositions function
+// Parameters: grid []int, xdim, ydim int (current grid)
+// Returns: newGrid []int (updated grid)
+// Description: Updates the positions of the fish and sharks based off of the rules in the specification
+func UpdatePositions(grid []int, xdim, ydim int) []int {
+	// Create a new grid to store the updated positions of the fish and sharks
+	newGrid := make([]int, xdim*ydim)
+
+	for i := 0; i < xdim; i++ {
+		for j := 0; j < ydim; j++ {
+			// Get the current cell value
+			cellValue := grid[j*xdim+i] // ChatGPT gave me this calculation to get the current cell value in a 2D array
+
+			// Check if the cell value is a shark
+			if cellValue == 1 {
+
+			}
+		}
+	}
+
+	// Return the updated grid
+	return newGrid
+
+}
+
 // Main Class
+// Description: Main function that handles the variables and calls the functions for the simulation
 func main() {
 	// Constants
 	xdim := 100
@@ -55,41 +103,32 @@ func main() {
 	NumShark := 20
 	NumFish := 100
 
-	// Colours of the fish, shark, and water
+	// Colors
 	fishColour := rl.Green
 	sharkColour := rl.Red
 	waterColour := rl.Blue
 
-	// Random seed for entity placement
-	rand.Int()
-
-	// ChatGPT helped me with the grid part of the code as I was confused as to how to initially set the fish and shark positions
-	// It works by creating a grid with the dimensions of xdim and ydim and the number of sharks and fish, and then shuffling the grid to simulate randomly placing the fish and sharks around the screen
-	grid := make([]int, xdim*ydim)
-	for i := 0; i < NumShark; i++ {
-		grid[i] = 1
-	}
-	for i := NumShark; i < NumShark+NumFish; i++ {
-		grid[i] = 2
-	}
-
-	rand.Shuffle(len(grid), func(i, j int) { grid[i], grid[j] = grid[j], grid[i] })
-
 	// Initialize the window
 	rl.InitWindow(int32(windowXSize), int32(windowYSize), "Raylib Wa-Tor world")
-	defer rl.CloseWindow() // Close window when done
+	defer rl.CloseWindow() // Ensure the window is closed on exit
 
-	// Logic loop
-	// This loop will handle the running of the simulation and will run until the window is closed
+	// Initialize grid
+	grid := InitialPositions(xdim, ydim, NumShark, NumFish)
+
+	// Simulation loop
 	for !rl.WindowShouldClose() {
 		rl.BeginDrawing()
 
-		// These for loops will iterate through the grid and draw the fish, sharks, and water to the screen
+		// Clear the screen
+		rl.ClearBackground(rl.RayWhite)
+
+		// Draw the grid
 		for i := 0; i < xdim; i++ {
-			for k := 0; k < ydim; k++ {
+			for j := 0; j < ydim; j++ {
 				x := i * cellXSize
-				y := k * cellYSize
-				cellValue := grid[k*xdim+i]
+				y := j * cellYSize
+				cellValue := grid[j*xdim+i]
+
 				if cellValue == 1 {
 					DrawShark(x, y, cellXSize, cellYSize, sharkColour)
 				} else if cellValue == 2 {
@@ -99,6 +138,9 @@ func main() {
 				}
 			}
 		}
+
+		// Update the grid
+		//grid = UpdatePositions(grid, xdim, ydim)
 
 		rl.EndDrawing()
 	}
