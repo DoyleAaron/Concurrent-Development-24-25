@@ -12,3 +12,5 @@
 ##### The next issue I faced in building this simulation is that I dont think the fish are being handled correctly asthey just disappear immediately. This ended up being due to how I was storing the grid as I wasn't copying it correctly which caused them to flash up for a second and then disappear.
 
 ##### The next issue I faced is that the sharks aren't dying once they hit their starvation point. This was due to the fact that I didn't check if it was less than the value of 0 and I added in the continue keyword so that it would skip the rest of the logic for the sharks if it had already starved.
+
+##### After doing this I moved on to getting the fish to move as currently they were just static on the screen. The fish would follow the same movement and bredding logic but they do not starve so they are a bit more simple to implement. The issue I am now running into is that the fish seem to reprouce very quickly and the sharks seem to die off quite quickly. This is the current issue I am trying to fix

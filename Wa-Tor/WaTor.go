@@ -135,8 +135,8 @@ func UpdatePositions(grid [][]Cell, xdim, ydim int) [][]Cell {
 					newGrid[j][i+1] = Cell{
 						Type:             1,
 						BreedTime:        currentCell.BreedTime,
-						StarveTime:       currentCell.StarveTime + 3, // Reset starvation timer
-						CurrentBreedTime: currentCell.CurrentBreedTime + 1,
+						StarveTime:       currentCell.StarveTime + 3,
+						CurrentBreedTime: currentCell.CurrentBreedTime + 2,
 					}
 					newGrid[j][i] = Cell{Type: 0} // Turn current position into water
 					moved = true
@@ -147,8 +147,8 @@ func UpdatePositions(grid [][]Cell, xdim, ydim int) [][]Cell {
 					newGrid[j+1][i] = Cell{
 						Type:             1,
 						BreedTime:        currentCell.BreedTime,
-						StarveTime:       currentCell.StarveTime + 3, // Reset starvation timer
-						CurrentBreedTime: currentCell.CurrentBreedTime + 1,
+						StarveTime:       currentCell.StarveTime + 3,
+						CurrentBreedTime: currentCell.CurrentBreedTime + 2,
 					}
 					newGrid[j][i] = Cell{Type: 0} // Turn current position into water
 					moved = true
@@ -159,10 +159,10 @@ func UpdatePositions(grid [][]Cell, xdim, ydim int) [][]Cell {
 					newGrid[j][i-1] = Cell{
 						Type:             1,
 						BreedTime:        currentCell.BreedTime,
-						StarveTime:       currentCell.StarveTime + 3, // Reset starvation timer
-						CurrentBreedTime: currentCell.CurrentBreedTime + 1,
+						StarveTime:       currentCell.StarveTime + 3,
+						CurrentBreedTime: currentCell.CurrentBreedTime + 2,
 					}
-					newGrid[j][i] = Cell{Type: 0} // Turn current position into water
+					newGrid[j][i] = Cell{Type: 0}
 					moved = true
 				}
 
@@ -207,7 +207,7 @@ func UpdatePositions(grid [][]Cell, xdim, ydim int) [][]Cell {
 								Type:             1,
 								BreedTime:        currentCell.BreedTime,
 								StarveTime:       currentCell.StarveTime - 1, // Decrement starvation timer
-								CurrentBreedTime: currentCell.CurrentBreedTime + 1,
+								CurrentBreedTime: currentCell.CurrentBreedTime + 2,
 							}
 							newGrid[j][i] = Cell{Type: 0}
 						}
@@ -216,6 +216,52 @@ func UpdatePositions(grid [][]Cell, xdim, ydim int) [][]Cell {
 						newGrid[j][i].StarveTime--
 					}
 				}
+			} else if currentCell.Type == 2 { // Check if the cell contains a fish
+				freeSpace := []struct{ x, y int }{}
+
+				// Check for empty cells around the shark
+				if j > 0 && grid[j-1][i].Type == 0 {
+					freeSpace = append(freeSpace, struct{ x, y int }{i, j - 1})
+				}
+				if i < xdim-1 && grid[j][i+1].Type == 0 {
+					freeSpace = append(freeSpace, struct{ x, y int }{i + 1, j})
+				}
+				if j < ydim-1 && grid[j+1][i].Type == 0 {
+					freeSpace = append(freeSpace, struct{ x, y int }{i, j + 1})
+				}
+				if i > 0 && grid[j][i-1].Type == 0 {
+					freeSpace = append(freeSpace, struct{ x, y int }{i - 1, j})
+				}
+
+				if len(freeSpace) > 0 {
+					randDirection := rand.Intn(len(freeSpace))
+					chosenDirection := freeSpace[randDirection]
+
+					// This is to check if the fish can breed
+					if currentCell.CurrentBreedTime == currentCell.BreedTime {
+						newGrid[chosenDirection.y][chosenDirection.x] = Cell{
+							Type:             2,
+							BreedTime:        currentCell.BreedTime,
+							CurrentBreedTime: 0, // Reset breed time
+						}
+						newGrid[j][i] = Cell{
+							Type:             2,
+							BreedTime:        currentCell.BreedTime,
+							CurrentBreedTime: 0,
+						}
+					} else {
+						newGrid[chosenDirection.y][chosenDirection.x] = Cell{
+							Type:             2,
+							BreedTime:        currentCell.BreedTime,
+							CurrentBreedTime: currentCell.CurrentBreedTime + 1,
+						}
+						newGrid[j][i] = Cell{Type: 0}
+					}
+				} else {
+					continue
+				}
+			} else {
+				continue
 			}
 		}
 	}
@@ -232,11 +278,11 @@ func main() {
 	windowYSize := 600
 	cellXSize := windowXSize / xdim
 	cellYSize := windowYSize / ydim
-	NumShark := 50
-	NumFish := 500
-	Starve := 50
-	SharkBreed := 10
-	FishBreed := 3
+	NumShark := 200
+	NumFish := 200
+	Starve := 1000
+	SharkBreed := 8
+	FishBreed := 12
 
 	// Colors
 	fishColour := rl.Green
