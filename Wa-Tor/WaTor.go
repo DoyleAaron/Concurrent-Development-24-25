@@ -15,6 +15,7 @@ package main
 
 import (
 	"math/rand"
+	"time"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -27,11 +28,11 @@ const (
 	windowYSize = 600                // Height of the window
 	cellXSize   = windowXSize / xdim // Width of each cell
 	cellYSize   = windowYSize / ydim // Height of each cell
-	NumShark    = 310                // The number of sharks in the simulation
-	NumFish     = 100                // The number of fish in the simulation
-	Starve      = 500                // The number of turns it takes for a shark to starve
-	SharkBreed  = 116                // The number of turns it takes for a shark to breed
-	FishBreed   = 150                // The number of turns it takes for a fish to breed
+	NumShark    = 500                // The number of sharks in the simulation
+	NumFish     = 250                // The number of fish in the simulation
+	Starve      = 10000              // The number of turns it takes for a shark to starve
+	SharkBreed  = 2                  // The number of turns it takes for a shark to breed
+	FishBreed   = 2                  // The number of turns it takes for a fish to breed
 )
 
 // Cell struct
@@ -143,39 +144,30 @@ func UpdatePositions(grid [][]Cell, xdim, ydim int, rnd *rand.Rand) [][]Cell {
 					}
 					newGrid[j][i] = Cell{Type: 0} // Turn current position into water
 					moved = true
-				}
-
-				// Check if there is a fish to the east
-				if i < xdim-1 && grid[j][i+1].Type == 2 && !moved {
+				} else if i < xdim-1 && grid[j][i+1].Type == 2 && !moved { // Check if there is a fish to the east
 					newGrid[j][i+1] = Cell{
 						Type:             1,
 						BreedTime:        currentCell.BreedTime,
 						StarveTime:       Starve,
-						CurrentBreedTime: currentCell.CurrentBreedTime + 2,
+						CurrentBreedTime: currentCell.CurrentBreedTime + 1,
 					}
 					newGrid[j][i] = Cell{Type: 0} // Turn current position into water
 					moved = true
-				}
-
-				// Check if there is a fish to the south
-				if j < ydim-1 && grid[j+1][i].Type == 2 && !moved {
+				} else if j < ydim-1 && grid[j+1][i].Type == 2 && !moved { // Check if there is a fish to the south
 					newGrid[j+1][i] = Cell{
 						Type:             1,
 						BreedTime:        currentCell.BreedTime,
 						StarveTime:       Starve,
-						CurrentBreedTime: currentCell.CurrentBreedTime + 2,
+						CurrentBreedTime: currentCell.CurrentBreedTime + 1,
 					}
 					newGrid[j][i] = Cell{Type: 0} // Turn current position into water
 					moved = true
-				}
-
-				// Check if there is a fish to the west
-				if i > 0 && grid[j][i-1].Type == 2 && !moved {
+				} else if i > 0 && grid[j][i-1].Type == 2 && !moved { // Check if there is a fish to the west
 					newGrid[j][i-1] = Cell{
 						Type:             1,
 						BreedTime:        currentCell.BreedTime,
 						StarveTime:       Starve,
-						CurrentBreedTime: currentCell.CurrentBreedTime + 2,
+						CurrentBreedTime: currentCell.CurrentBreedTime + 1,
 					}
 					newGrid[j][i] = Cell{Type: 0}
 					moved = true
@@ -183,6 +175,7 @@ func UpdatePositions(grid [][]Cell, xdim, ydim int, rnd *rand.Rand) [][]Cell {
 
 				// If the shark hasn't moved, decrement its StarveTime and handle breeding/moving
 				if !moved {
+					newGrid[j][i].StarveTime--
 					freeSpace := []struct{ x, y int }{}
 
 					// Check for empty cells around the shark and if there are any add them to the freeSpace slice
@@ -223,13 +216,14 @@ func UpdatePositions(grid [][]Cell, xdim, ydim int, rnd *rand.Rand) [][]Cell {
 								Type:             1,
 								BreedTime:        currentCell.BreedTime,
 								StarveTime:       currentCell.StarveTime - 1,
-								CurrentBreedTime: currentCell.CurrentBreedTime + 2,
+								CurrentBreedTime: currentCell.CurrentBreedTime + 1,
 							}
 							newGrid[j][i] = Cell{Type: 0}
 						}
 					} else {
 						// Decrement StarveTime if the shark hasn't moved
 						newGrid[j][i].StarveTime--
+						newGrid[j][i].CurrentBreedTime++
 					}
 				}
 			} else if currentCell.Type == 2 { // Check if the cell contains a fish
@@ -327,5 +321,8 @@ func main() {
 		grid = UpdatePositions(grid, xdim, ydim, rnd)
 
 		rl.EndDrawing()
+		const simulationDelay = 200 * time.Millisecond
+		time.Sleep(simulationDelay)
+
 	}
 }
