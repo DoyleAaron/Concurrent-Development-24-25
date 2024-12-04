@@ -29,9 +29,9 @@ const (
 	cellYSize   = windowYSize / ydim // Height of each cell
 	NumShark    = 310                // The number of sharks in the simulation
 	NumFish     = 100                // The number of fish in the simulation
-	Starve      = 900                // The number of turns it takes for a shark to starve
-	SharkBreed  = 300                // The number of turns it takes for a shark to breed
-	FishBreed   = 405                // The number of turns it takes for a fish to breed
+	Starve      = 500                // The number of turns it takes for a shark to starve
+	SharkBreed  = 116                // The number of turns it takes for a shark to breed
+	FishBreed   = 150                // The number of turns it takes for a fish to breed
 )
 
 // Cell struct
