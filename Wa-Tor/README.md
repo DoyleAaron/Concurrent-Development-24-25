@@ -14,3 +14,5 @@
 ##### The next issue I faced is that the sharks aren't dying once they hit their starvation point. This was due to the fact that I didn't check if it was less than the value of 0 and I added in the continue keyword so that it would skip the rest of the logic for the sharks if it had already starved.
 
 ##### After doing this I moved on to getting the fish to move as currently they were just static on the screen. The fish would follow the same movement and bredding logic but they do not starve so they are a bit more simple to implement. The issue I am now running into is that the fish seem to reproduce very quickly and the sharks seem to die off quite quickly. I was accidentally not resetting the starve timers for the sharks which was making them all just despawn after a certain amount of time, this led to the fish dominating every simulation that I ran.
+
+##### I have now spotted a small issue where the shaks are starving very quickly. I am still working on this issue but I have now seeded a randomness so I get the same random input every time as this was making the simulation very imbalanced and hard to make even before

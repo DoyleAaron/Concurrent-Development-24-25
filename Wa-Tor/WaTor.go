@@ -73,7 +73,7 @@ func DrawWater(x, y, width, height int, waterColour rl.Color) {
 // Parameters: xdim, ydim, NumShark, NumFish int
 // Returns: grid [][]Cell
 // Description: Initializes the positions of the fish and sharks in the grid so that they are randomly placed around the grid
-func InitialPositions(xdim, ydim, NumShark int, NumFish int, Starve int, FishBreed int, SharkBreed int) [][]Cell {
+func InitialPositions(xdim, ydim, NumShark int, NumFish int, Starve int, FishBreed int, SharkBreed int, rnd *rand.Rand) [][]Cell {
 
 	// ChatGPT helped me with the grid part of the code as I was confused as to how to initially set the fish and shark positions
 	// It works by creating a grid with the dimensions of xdim and ydim and the number of sharks and fish, then it creates a 1D slice to represent the flattened grid for random placement.
@@ -95,7 +95,7 @@ func InitialPositions(xdim, ydim, NumShark int, NumFish int, Starve int, FishBre
 	}
 
 	// This mixes up the order of the grid to simulate randomly placing the fish and sharks around the screen
-	rand.Shuffle(len(flatGrid), func(i, j int) { flatGrid[i], flatGrid[j] = flatGrid[j], flatGrid[i] })
+	rnd.Shuffle(len(flatGrid), func(i, j int) { flatGrid[i], flatGrid[j] = flatGrid[j], flatGrid[i] })
 
 	// Map the flat grid back into the 2D grid
 	for i := 0; i < ydim; i++ {
@@ -111,7 +111,7 @@ func InitialPositions(xdim, ydim, NumShark int, NumFish int, Starve int, FishBre
 // Parameters: grid [][]Cell, xdim, ydim int (current grid)
 // Returns: newGrid [][]Cell (updated grid)
 // Description: Updates the positions of the fish and sharks based off of the rules in the specification
-func UpdatePositions(grid [][]Cell, xdim, ydim int) [][]Cell {
+func UpdatePositions(grid [][]Cell, xdim, ydim int, rnd *rand.Rand) [][]Cell {
 	// Create a new grid to store the updated positions of the fish and sharks
 	newGrid := make([][]Cell, ydim)
 	for i := 0; i < ydim; i++ {
@@ -138,7 +138,7 @@ func UpdatePositions(grid [][]Cell, xdim, ydim int) [][]Cell {
 					newGrid[j-1][i] = Cell{
 						Type:             1,
 						BreedTime:        currentCell.BreedTime,
-						StarveTime:       currentCell.StarveTime + 3, // Reset starvation timer
+						StarveTime:       Starve, // Reset starvation timer
 						CurrentBreedTime: currentCell.CurrentBreedTime + 1,
 					}
 					newGrid[j][i] = Cell{Type: 0} // Turn current position into water
@@ -150,7 +150,7 @@ func UpdatePositions(grid [][]Cell, xdim, ydim int) [][]Cell {
 					newGrid[j][i+1] = Cell{
 						Type:             1,
 						BreedTime:        currentCell.BreedTime,
-						StarveTime:       currentCell.StarveTime + 3,
+						StarveTime:       Starve,
 						CurrentBreedTime: currentCell.CurrentBreedTime + 2,
 					}
 					newGrid[j][i] = Cell{Type: 0} // Turn current position into water
@@ -162,7 +162,7 @@ func UpdatePositions(grid [][]Cell, xdim, ydim int) [][]Cell {
 					newGrid[j+1][i] = Cell{
 						Type:             1,
 						BreedTime:        currentCell.BreedTime,
-						StarveTime:       currentCell.StarveTime + 3,
+						StarveTime:       Starve,
 						CurrentBreedTime: currentCell.CurrentBreedTime + 2,
 					}
 					newGrid[j][i] = Cell{Type: 0} // Turn current position into water
@@ -174,7 +174,7 @@ func UpdatePositions(grid [][]Cell, xdim, ydim int) [][]Cell {
 					newGrid[j][i-1] = Cell{
 						Type:             1,
 						BreedTime:        currentCell.BreedTime,
-						StarveTime:       currentCell.StarveTime + 3,
+						StarveTime:       Starve,
 						CurrentBreedTime: currentCell.CurrentBreedTime + 2,
 					}
 					newGrid[j][i] = Cell{Type: 0}
@@ -201,7 +201,7 @@ func UpdatePositions(grid [][]Cell, xdim, ydim int) [][]Cell {
 
 					//  If there are empty cells around the shark, move to one of them
 					if len(freeSpace) > 0 {
-						randDirection := rand.Intn(len(freeSpace)) // I'm using this to randomly choose a direction for the shark to move
+						randDirection := rnd.Intn(len(freeSpace)) // I'm using this to randomly choose a direction for the shark to move
 						chosenDirection := freeSpace[randDirection]
 
 						// Handle breeding or moving
@@ -250,7 +250,7 @@ func UpdatePositions(grid [][]Cell, xdim, ydim int) [][]Cell {
 				}
 
 				if len(freeSpace) > 0 {
-					randDirection := rand.Intn(len(freeSpace))
+					randDirection := rnd.Intn(len(freeSpace))
 					chosenDirection := freeSpace[randDirection]
 
 					// This is to check if the fish can breed
@@ -293,12 +293,14 @@ func main() {
 	sharkColour := rl.Red
 	waterColour := rl.Blue
 
+	rnd := rand.New(rand.NewSource(42))
+
 	// Initialize the window
 	rl.InitWindow(int32(windowXSize), int32(windowYSize), "Raylib Wa-Tor Simulation")
 	defer rl.CloseWindow() // Ensure the window is closed on exit
 
 	// Initialize grid
-	grid := InitialPositions(xdim, ydim, NumShark, NumFish, Starve, FishBreed, SharkBreed)
+	grid := InitialPositions(xdim, ydim, NumShark, NumFish, Starve, FishBreed, SharkBreed, rnd)
 
 	// Simulation loop
 	for !rl.WindowShouldClose() {
@@ -322,7 +324,7 @@ func main() {
 		}
 
 		// Update the grid
-		grid = UpdatePositions(grid, xdim, ydim)
+		grid = UpdatePositions(grid, xdim, ydim, rnd)
 
 		rl.EndDrawing()
 	}
