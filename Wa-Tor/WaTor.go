@@ -14,7 +14,11 @@
 package main
 
 import (
+	"encoding/csv"
+	"fmt"
 	"math/rand"
+	"os"
+	"time"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -30,8 +34,8 @@ const (
 	NumShark    = 500                // The number of sharks in the simulation
 	NumFish     = 100                // The number of fish in the simulation
 	Starve      = 900                // The number of turns it takes for a shark to starve
-	SharkBreed  = 114                // The number of turns it takes for a shark to breed
-	FishBreed   = 160                // The number of turns it takes for a fish to breed
+	SharkBreed  = 100                // The number of turns it takes for a shark to breed
+	FishBreed   = 200                // The number of turns it takes for a fish to breed
 )
 
 // Cell struct
@@ -282,19 +286,40 @@ func UpdatePositions(grid [][]Cell, xdim, ydim int, rnd *rand.Rand) [][]Cell {
 // Description: Main function that handles the variables and calls the functions for the simulation
 func main() {
 
-	// Colors
+	// Colours
 	fishColour := rl.Green
 	sharkColour := rl.Red
 	waterColour := rl.Blue
 
 	rnd := rand.New(rand.NewSource(42))
 
-	// Initialize the window
+	// Initialise the window
 	rl.InitWindow(int32(windowXSize), int32(windowYSize), "Raylib Wa-Tor Simulation")
 	defer rl.CloseWindow() // Ensure the window is closed on exit
 
-	// Initialize grid
+	// Initialise grid
 	grid := InitialPositions(xdim, ydim, NumShark, NumFish, Starve, FishBreed, SharkBreed, rnd)
+
+	// Open CSV file for writing
+	file, err := os.Create("./fps_log.csv")
+	if err != nil {
+		fmt.Println("Error creating CSV file:", err)
+		return
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	// Write CSV header
+	if err := writer.Write([]string{"Timestamp", "FPS"}); err != nil {
+		fmt.Println("Error writing to CSV file:", err)
+		return
+	}
+
+	// Time tracking for FPS logging
+	lastLogTime := time.Now()
+	index := 0 // This is so I can track the seconds for the FPS logging
 
 	// Simulation loop
 	for !rl.WindowShouldClose() {
@@ -320,6 +345,18 @@ func main() {
 		// Update the grid
 		grid = UpdatePositions(grid, xdim, ydim, rnd)
 
+		// Log FPS every second, chatGPT helped me with this part of the code as I was unsure how to write the FPS into the csv file
+		if time.Since(lastLogTime).Seconds() >= 1 {
+			currentFPS := rl.GetFPS()
+			index++
+			if err := writer.Write([]string{fmt.Sprintf("%d", index), fmt.Sprintf("%d", currentFPS)}); err != nil {
+				fmt.Println("Error writing to CSV file:", err)
+			}
+			writer.Flush() // Ensure data is written to the file
+			lastLogTime = time.Now()
+		}
+
+		rl.DrawFPS(10, 10)
 		rl.EndDrawing()
 	}
 }
