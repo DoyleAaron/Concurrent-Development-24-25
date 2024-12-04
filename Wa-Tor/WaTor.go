@@ -15,7 +15,6 @@ package main
 
 import (
 	"math/rand"
-	"time"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -29,10 +28,10 @@ const (
 	cellXSize   = windowXSize / xdim // Width of each cell
 	cellYSize   = windowYSize / ydim // Height of each cell
 	NumShark    = 500                // The number of sharks in the simulation
-	NumFish     = 250                // The number of fish in the simulation
-	Starve      = 10000              // The number of turns it takes for a shark to starve
-	SharkBreed  = 2                  // The number of turns it takes for a shark to breed
-	FishBreed   = 2                  // The number of turns it takes for a fish to breed
+	NumFish     = 100                // The number of fish in the simulation
+	Starve      = 900                // The number of turns it takes for a shark to starve
+	SharkBreed  = 114                // The number of turns it takes for a shark to breed
+	FishBreed   = 160                // The number of turns it takes for a fish to breed
 )
 
 // Cell struct
@@ -40,10 +39,10 @@ const (
 // Returns: None
 // Description: This is to give the cells in the grid a type, breed time and starve time
 type Cell struct {
-	Type             int
-	BreedTime        int
-	StarveTime       int
-	CurrentBreedTime int
+	Type             int // 0 = water, 1 = shark, 2 = fish
+	BreedTime        int // The number of turns it takes for the fish or shark to breed
+	StarveTime       int // The number of turns it takes for the shark to starve
+	CurrentBreedTime int // The current number of turns the fish or shark has been alive
 }
 
 // DrawFish function
@@ -259,6 +258,7 @@ func UpdatePositions(grid [][]Cell, xdim, ydim int, rnd *rand.Rand) [][]Cell {
 							BreedTime:        currentCell.BreedTime,
 							CurrentBreedTime: 0,
 						}
+						continue
 					} else {
 						newGrid[chosenDirection.y][chosenDirection.x] = Cell{
 							Type:             2,
@@ -321,8 +321,5 @@ func main() {
 		grid = UpdatePositions(grid, xdim, ydim, rnd)
 
 		rl.EndDrawing()
-		const simulationDelay = 200 * time.Millisecond
-		time.Sleep(simulationDelay)
-
 	}
 }
