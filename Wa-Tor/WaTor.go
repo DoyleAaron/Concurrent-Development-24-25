@@ -31,11 +31,11 @@ const (
 	windowYSize = 600                // Height of the window
 	cellXSize   = windowXSize / xdim // Width of each cell
 	cellYSize   = windowYSize / ydim // Height of each cell
-	NumShark    = 500                // The number of sharks in the simulation
-	NumFish     = 100                // The number of fish in the simulation
-	Starve      = 900                // The number of turns it takes for a shark to starve
-	SharkBreed  = 100                // The number of turns it takes for a shark to breed
-	FishBreed   = 200                // The number of turns it takes for a fish to breed
+	NumShark    = 300                // The number of sharks in the simulation
+	NumFish     = 1000               // The number of fish in the simulation
+	Starve      = 200                // The number of turns it takes for a shark to starve
+	SharkBreed  = 40                 // The number of turns it takes for a shark to breed
+	FishBreed   = 10                 // The number of turns it takes for a fish to breed
 )
 
 // Cell struct
@@ -47,6 +47,7 @@ type Cell struct {
 	BreedTime        int // The number of turns it takes for the fish or shark to breed
 	StarveTime       int // The number of turns it takes for the shark to starve
 	CurrentBreedTime int // The current number of turns the fish or shark has been alive
+	Visited          int // This is to check if the cell has been visited and to ignore it if it has
 }
 
 // DrawFish function
@@ -74,7 +75,7 @@ func DrawWater(x, y, width, height int, waterColour rl.Color) {
 }
 
 // InitialPositions function
-// Parameters: xdim, ydim, NumShark, NumFish int
+// Parameters: xdim, ydim, NumShark, NumFish int, rnd *rand.Rand
 // Returns: grid [][]Cell
 // Description: Initializes the positions of the fish and sharks in the grid so that they are randomly placed around the grid
 func InitialPositions(xdim, ydim, NumShark int, NumFish int, Starve int, FishBreed int, SharkBreed int, rnd *rand.Rand) [][]Cell {
@@ -107,7 +108,6 @@ func InitialPositions(xdim, ydim, NumShark int, NumFish int, Starve int, FishBre
 			grid[i][j] = flatGrid[i*xdim+j]
 		}
 	}
-
 	return grid
 }
 
@@ -116,83 +116,98 @@ func InitialPositions(xdim, ydim, NumShark int, NumFish int, Starve int, FishBre
 // Returns: newGrid [][]Cell (updated grid)
 // Description: Updates the positions of the fish and sharks based off of the rules in the specification
 func UpdatePositions(grid [][]Cell, xdim, ydim int, rnd *rand.Rand) [][]Cell {
-	// Create a new grid to store the updated positions of the fish and sharks
-	newGrid := make([][]Cell, ydim)
+
+	// Reset visited flags for all cells
 	for i := 0; i < ydim; i++ {
-		newGrid[i] = make([]Cell, xdim)
-		copy(newGrid[i], grid[i])
+		for j := 0; j < xdim; j++ {
+			grid[i][j].Visited = 0
+		}
 	}
 
 	for i := 0; i < xdim; i++ {
 		for j := 0; j < ydim; j++ {
 			currentCell := grid[j][i] // Get the current cell and its information
+			if currentCell.Visited == 1 {
+				continue // Skip further processing for this cell
+			}
 
+			// SHARK LOGIC COMMENCES HERE
+			// Overview:
 			// Check if the cell contains a shark
+			// Then check if there is a fish to the north, east, south or west of the shark
+			// If there is a fish in any of these directions, move the shark to that cell and turn the current cell into water
+			// If there is no fish in any of these directions, decrement the shark's StarveTime and check for empty cells around the shark
+			// If there are empty cells around the shark, move the shark to one of them randomly and leave water in the current cell
+			// If the shark can breed, move the shark into the empty cell and leave the current cell as a new shark
 			if currentCell.Type == 1 {
 				// Check if the shark starves
 				if currentCell.StarveTime <= 0 {
-					newGrid[j][i] = Cell{Type: 0} // The shark has starved and is removed from the grid
-					continue                      // Skip further processing for this shark
+					grid[j][i] = Cell{Type: 0, Visited: 1} // The shark has starved and is removed from the grid
+					continue                               // Skip further processing for this shark
 				}
 
 				moved := false
 
 				// Check if there is a fish to the north
-				if j > 0 && grid[j-1][i].Type == 2 && !moved {
-					newGrid[j-1][i] = Cell{
+				if j > 0 && grid[j-1][i].Type == 2 {
+					grid[j-1][i] = Cell{
 						Type:             1,
 						BreedTime:        currentCell.BreedTime,
 						StarveTime:       Starve, // Reset starvation timer
 						CurrentBreedTime: currentCell.CurrentBreedTime + 1,
+						Visited:          1,
 					}
-					newGrid[j][i] = Cell{Type: 0} // Turn current position into water
+					grid[j][i] = Cell{Type: 0, Visited: 1} // Turn current position into water
 					moved = true
-				} else if i < xdim-1 && grid[j][i+1].Type == 2 && !moved { // Check if there is a fish to the east
-					newGrid[j][i+1] = Cell{
+				} else if i < xdim-1 && grid[j][i+1].Type == 2 { // Check if there is a fish to the east
+					grid[j][i+1] = Cell{
 						Type:             1,
 						BreedTime:        currentCell.BreedTime,
 						StarveTime:       Starve,
 						CurrentBreedTime: currentCell.CurrentBreedTime + 1,
+						Visited:          1,
 					}
-					newGrid[j][i] = Cell{Type: 0} // Turn current position into water
+					grid[j][i] = Cell{Type: 0, Visited: 1} // Turn current position into water
 					moved = true
-				} else if j < ydim-1 && grid[j+1][i].Type == 2 && !moved { // Check if there is a fish to the south
-					newGrid[j+1][i] = Cell{
+				} else if j < ydim-1 && grid[j+1][i].Type == 2 { // Check if there is a fish to the south
+					grid[j+1][i] = Cell{
 						Type:             1,
 						BreedTime:        currentCell.BreedTime,
 						StarveTime:       Starve,
 						CurrentBreedTime: currentCell.CurrentBreedTime + 1,
+						Visited:          1,
 					}
-					newGrid[j][i] = Cell{Type: 0} // Turn current position into water
+					grid[j][i] = Cell{Type: 0, Visited: 1} // Turn current position into water
 					moved = true
-				} else if i > 0 && grid[j][i-1].Type == 2 && !moved { // Check if there is a fish to the west
-					newGrid[j][i-1] = Cell{
+				} else if i > 0 && grid[j][i-1].Type == 2 { // Check if there is a fish to the west
+					grid[j][i-1] = Cell{
 						Type:             1,
 						BreedTime:        currentCell.BreedTime,
 						StarveTime:       Starve,
 						CurrentBreedTime: currentCell.CurrentBreedTime + 1,
+						Visited:          1,
 					}
-					newGrid[j][i] = Cell{Type: 0}
+					grid[j][i] = Cell{Type: 0, Visited: 1} // Turn current position into water
 					moved = true
 				}
 
 				// If the shark hasn't moved, decrement its StarveTime and handle breeding/moving
 				if !moved {
-					newGrid[j][i].StarveTime--
+					grid[j][i].StarveTime--
 					freeSpace := []struct{ x, y int }{}
 
 					// Check for empty cells around the shark and if there are any add them to the freeSpace slice
 					if j > 0 && grid[j-1][i].Type == 0 {
-						freeSpace = append(freeSpace, struct{ x, y int }{i, j - 1})
+						freeSpace = append(freeSpace, struct{ x, y int }{j - 1, i})
 					}
 					if i < xdim-1 && grid[j][i+1].Type == 0 {
-						freeSpace = append(freeSpace, struct{ x, y int }{i + 1, j})
+						freeSpace = append(freeSpace, struct{ x, y int }{j, i + 1})
 					}
 					if j < ydim-1 && grid[j+1][i].Type == 0 {
-						freeSpace = append(freeSpace, struct{ x, y int }{i, j + 1})
+						freeSpace = append(freeSpace, struct{ x, y int }{j + 1, i})
 					}
 					if i > 0 && grid[j][i-1].Type == 0 {
-						freeSpace = append(freeSpace, struct{ x, y int }{i - 1, j})
+						freeSpace = append(freeSpace, struct{ x, y int }{j, i - 1})
 					}
 
 					//  If there are empty cells around the shark, move to one of them
@@ -201,85 +216,102 @@ func UpdatePositions(grid [][]Cell, xdim, ydim int, rnd *rand.Rand) [][]Cell {
 						chosenDirection := freeSpace[randDirection]
 
 						// Handle breeding or moving
-						if currentCell.CurrentBreedTime == currentCell.BreedTime {
-							newGrid[chosenDirection.y][chosenDirection.x] = Cell{
+						if currentCell.CurrentBreedTime >= currentCell.BreedTime {
+							grid[chosenDirection.y][chosenDirection.x] = Cell{
 								Type:             1,
 								BreedTime:        SharkBreed,
 								StarveTime:       Starve,
 								CurrentBreedTime: 0, // Reset breed time
+								Visited:          1,
 							}
-							newGrid[j][i] = Cell{
+							grid[j][i] = Cell{
 								Type:             1,
 								BreedTime:        currentCell.BreedTime,
 								StarveTime:       currentCell.StarveTime - 1,
 								CurrentBreedTime: 0,
+								Visited:          1,
 							}
 						} else {
-							newGrid[chosenDirection.y][chosenDirection.x] = Cell{
+							grid[chosenDirection.y][chosenDirection.x] = Cell{
 								Type:             1,
 								BreedTime:        currentCell.BreedTime,
 								StarveTime:       currentCell.StarveTime - 1,
 								CurrentBreedTime: currentCell.CurrentBreedTime + 1,
+								Visited:          1,
 							}
-							newGrid[j][i] = Cell{Type: 0}
+							grid[j][i] = Cell{Type: 0, Visited: 1}
 						}
 					} else {
 						// Decrement StarveTime if the shark hasn't moved
-						newGrid[j][i].StarveTime--
-						newGrid[j][i].CurrentBreedTime++
+						grid[j][i].StarveTime--
+						grid[j][i].CurrentBreedTime++
 					}
 				}
+
+				// FISH LOGIC COMMENCES HERE
+				// Overview:
+				// Check if the cell contains a fish
+				// Then check if there are empty cells around the fish
+				// If there are empty cells around the fish, move the fish to one of them and leave water in the current cell
+				// If the fish can breed, move the fish into the empty cell and leave the current cell as a new fish
 			} else if currentCell.Type == 2 { // Check if the cell contains a fish
+				if currentCell.Visited == 1 {
+					continue // Skip further processing for this fish
+				}
 				freeSpace := []struct{ x, y int }{}
 
 				// Check for empty cells around the fish and if there are any add them to the freeSpace slice
-				if j > 0 && grid[j-1][i].Type == 0 {
+				if j > 0 && grid[j-1][i].Type == 0 && grid[j-1][i].Visited == 0 {
 					freeSpace = append(freeSpace, struct{ x, y int }{i, j - 1})
 				}
-				if i < xdim-1 && grid[j][i+1].Type == 0 {
+				if i < xdim-1 && grid[j][i+1].Type == 0 && grid[j][i+1].Visited == 0 {
 					freeSpace = append(freeSpace, struct{ x, y int }{i + 1, j})
 				}
-				if j < ydim-1 && grid[j+1][i].Type == 0 {
+				if j < ydim-1 && grid[j+1][i].Type == 0 && grid[j+1][i].Visited == 0 {
 					freeSpace = append(freeSpace, struct{ x, y int }{i, j + 1})
 				}
-				if i > 0 && grid[j][i-1].Type == 0 {
+				if i > 0 && grid[j][i-1].Type == 0 && grid[j][i-1].Visited == 0 {
 					freeSpace = append(freeSpace, struct{ x, y int }{i - 1, j})
 				}
+
+				currentCell.CurrentBreedTime++ // Increment the current breed time for the fish
 
 				if len(freeSpace) > 0 {
 					randDirection := rnd.Intn(len(freeSpace))
 					chosenDirection := freeSpace[randDirection]
 
 					// This is to check if the fish can breed
-					if currentCell.CurrentBreedTime == currentCell.BreedTime {
-						newGrid[chosenDirection.y][chosenDirection.x] = Cell{
+					if currentCell.CurrentBreedTime >= currentCell.BreedTime {
+						grid[chosenDirection.y][chosenDirection.x] = Cell{
 							Type:             2,
 							BreedTime:        currentCell.BreedTime,
 							CurrentBreedTime: 0, // Reset breed time
+							Visited:          1,
 						}
-						newGrid[j][i] = Cell{
+						grid[j][i] = Cell{
 							Type:             2,
 							BreedTime:        currentCell.BreedTime,
 							CurrentBreedTime: 0,
+							Visited:          1,
 						}
-						continue
 					} else {
-						newGrid[chosenDirection.y][chosenDirection.x] = Cell{
+						grid[j][i] = Cell{Type: 0, Visited: 1} // Turn current position into water
+						grid[chosenDirection.y][chosenDirection.x] = Cell{
 							Type:             2,
 							BreedTime:        currentCell.BreedTime,
 							CurrentBreedTime: currentCell.CurrentBreedTime + 1,
+							Visited:          1,
 						}
-						newGrid[j][i] = Cell{Type: 0}
 					}
 				} else {
-					continue // If the fish can't move then continue to the next cell
+					grid[j][i].CurrentBreedTime = currentCell.CurrentBreedTime // Increment the current breed time for the fish
 				}
 			} else {
 				continue // If the cell is water then continue to the next cell
 			}
 		}
 	}
-	return newGrid
+	return grid
 }
 
 // Main Class
