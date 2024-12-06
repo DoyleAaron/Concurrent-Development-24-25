@@ -33,8 +33,8 @@ const (
 	cellYSize   = windowYSize / ydim // Height of each cell
 	NumShark    = 300                // The number of sharks in the simulation
 	NumFish     = 1000               // The number of fish in the simulation
-	Starve      = 200                // The number of turns it takes for a shark to starve
-	SharkBreed  = 40                 // The number of turns it takes for a shark to breed
+	Starve      = 3                  // The number of turns it takes for a shark to starve
+	SharkBreed  = 3                  // The number of turns it takes for a shark to breed
 	FishBreed   = 10                 // The number of turns it takes for a fish to breed
 )
 
@@ -148,42 +148,30 @@ func UpdatePositions(grid [][]Cell, xdim, ydim int, rnd *rand.Rand) [][]Cell {
 
 				moved := false
 
-				// Check if there is a fish to the north
+				fishDirections := []struct{ x, y int }{}
+
+				// Check if there is a fish to the north, east, south or west of the shark
 				if j > 0 && grid[j-1][i].Type == 2 {
-					grid[j-1][i] = Cell{
+					fishDirections = append(fishDirections, struct{ x, y int }{j - 1, i})
+				}
+				if i < xdim-1 && grid[j][i+1].Type == 2 {
+					fishDirections = append(fishDirections, struct{ x, y int }{j, i + 1})
+				}
+				if j < ydim-1 && grid[j+1][i].Type == 2 {
+					fishDirections = append(fishDirections, struct{ x, y int }{j + 1, i})
+				}
+				if i > 0 && grid[j][i-1].Type == 2 {
+					fishDirections = append(fishDirections, struct{ x, y int }{j, i - 1})
+				}
+
+				if len(fishDirections) > 0 {
+					randDirection := rnd.Intn(len(fishDirections))
+					chosenDirection := fishDirections[randDirection]
+
+					grid[chosenDirection.x][chosenDirection.y] = Cell{
 						Type:             1,
 						BreedTime:        currentCell.BreedTime,
 						StarveTime:       Starve, // Reset starvation timer
-						CurrentBreedTime: currentCell.CurrentBreedTime + 1,
-						Visited:          1,
-					}
-					grid[j][i] = Cell{Type: 0, Visited: 1} // Turn current position into water
-					moved = true
-				} else if i < xdim-1 && grid[j][i+1].Type == 2 { // Check if there is a fish to the east
-					grid[j][i+1] = Cell{
-						Type:             1,
-						BreedTime:        currentCell.BreedTime,
-						StarveTime:       Starve,
-						CurrentBreedTime: currentCell.CurrentBreedTime + 1,
-						Visited:          1,
-					}
-					grid[j][i] = Cell{Type: 0, Visited: 1} // Turn current position into water
-					moved = true
-				} else if j < ydim-1 && grid[j+1][i].Type == 2 { // Check if there is a fish to the south
-					grid[j+1][i] = Cell{
-						Type:             1,
-						BreedTime:        currentCell.BreedTime,
-						StarveTime:       Starve,
-						CurrentBreedTime: currentCell.CurrentBreedTime + 1,
-						Visited:          1,
-					}
-					grid[j][i] = Cell{Type: 0, Visited: 1} // Turn current position into water
-					moved = true
-				} else if i > 0 && grid[j][i-1].Type == 2 { // Check if there is a fish to the west
-					grid[j][i-1] = Cell{
-						Type:             1,
-						BreedTime:        currentCell.BreedTime,
-						StarveTime:       Starve,
 						CurrentBreedTime: currentCell.CurrentBreedTime + 1,
 						Visited:          1,
 					}
@@ -390,5 +378,6 @@ func main() {
 
 		rl.DrawFPS(10, 10)
 		rl.EndDrawing()
+		time.Sleep(10 * time.Millisecond)
 	}
 }
