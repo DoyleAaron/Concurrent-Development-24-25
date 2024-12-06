@@ -147,8 +147,10 @@ func UpdatePositions(grid [][]Cell, startX, endX, ydim int, boundaryMutex *sync.
 			// Check if the cell contains a shark
 			// Then check if there is a fish to the north, east, south or west of the shark
 			// If there is a fish in any of these directions, move the shark to that cell and turn the current cell into water
+			// If the shark wants to cross the boundary, lock the boundaryMutex and move the shark, once the shark has moved, unlock the boundaryMutex
 			// If there is no fish in any of these directions, decrement the shark's StarveTime and check for empty cells around the shark
 			// If there are empty cells around the shark, move the shark to one of them randomly and leave water in the current cell
+			// Again, if the shark wants to cross the boundary, lock the boundaryMutex and move the shark, once the shark has moved, unlock the boundaryMutex
 			// If the shark can breed, move the shark into the empty cell and leave the current cell as a new shark
 			if currentCell.Type == 1 {
 				// Check if the shark starves
@@ -158,6 +160,9 @@ func UpdatePositions(grid [][]Cell, startX, endX, ydim int, boundaryMutex *sync.
 				}
 
 				moved := false
+
+				// Variable to ensure that only one thread can access the data at a time
+				var mutex *sync.Mutex
 
 				fishDirections := []struct{ x, y int }{}
 
@@ -175,10 +180,18 @@ func UpdatePositions(grid [][]Cell, startX, endX, ydim int, boundaryMutex *sync.
 					fishDirections = append(fishDirections, struct{ x, y int }{j, i - 1})
 				}
 
+				// If there is a fish in any of these directions, move the shark to a random fish cell
 				if len(fishDirections) > 0 {
 					randDirection := rnd.Intn(len(fishDirections))
 					chosenDirection := fishDirections[randDirection]
 
+					// If the shark wants to cross the boundary, lock the boundaryMutex
+					if chosenDirection.x > endX {
+						mutex = boundaryMutex
+						mutex.Lock()
+					}
+
+					// Move the shark to the fish cell and turn the current cell into water
 					grid[chosenDirection.x][chosenDirection.y] = Cell{
 						Type:             1,
 						BreedTime:        currentCell.BreedTime,
@@ -187,6 +200,12 @@ func UpdatePositions(grid [][]Cell, startX, endX, ydim int, boundaryMutex *sync.
 						Visited:          1,
 					}
 					grid[j][i] = Cell{Type: 0, Visited: 1} // Turn current position into water
+
+					// If the shark has moved across the boundary, unlock the boundaryMutex
+					if mutex != nil {
+						mutex.Unlock()
+					}
+
 					moved = true
 				}
 
@@ -214,8 +233,15 @@ func UpdatePositions(grid [][]Cell, startX, endX, ydim int, boundaryMutex *sync.
 						randDirection := rnd.Intn(len(freeSpace)) // I'm using this to randomly choose a direction for the shark to move
 						chosenDirection := freeSpace[randDirection]
 
-						// Handle breeding or moving
+						// If the shark wants to cross the boundary, lock the boundaryMutex
+						if chosenDirection.x > endX {
+							mutex = boundaryMutex
+							mutex.Lock()
+						}
+
+						// If the shark can breed, move the shark into the empty cell and leave the current cell as a new shark
 						if currentCell.CurrentBreedTime >= currentCell.BreedTime {
+
 							grid[chosenDirection.y][chosenDirection.x] = Cell{
 								Type:             1,
 								BreedTime:        SharkBreed,
@@ -231,6 +257,7 @@ func UpdatePositions(grid [][]Cell, startX, endX, ydim int, boundaryMutex *sync.
 								Visited:          1,
 							}
 						} else {
+							// Otherwise, move the shark to the empty cell and leave the current cell as water
 							grid[chosenDirection.y][chosenDirection.x] = Cell{
 								Type:             1,
 								BreedTime:        currentCell.BreedTime,
@@ -239,6 +266,11 @@ func UpdatePositions(grid [][]Cell, startX, endX, ydim int, boundaryMutex *sync.
 								Visited:          1,
 							}
 							grid[j][i] = Cell{Type: 0, Visited: 1}
+						}
+
+						// If the shark has moved across the boundary, unlock the boundaryMutex so other threads can access the data
+						if mutex != nil {
+							mutex.Unlock()
 						}
 					} else {
 						// Decrement StarveTime if the shark hasn't moved
@@ -258,6 +290,8 @@ func UpdatePositions(grid [][]Cell, startX, endX, ydim int, boundaryMutex *sync.
 					continue // Skip further processing for this fish
 				}
 				freeSpace := []struct{ x, y int }{}
+				// Mutex to ensure that only one thread can access the data at a time
+				var mutex *sync.Mutex
 
 				// Check for empty cells around the fish and if there are any add them to the freeSpace slice
 				if j > 0 && grid[j-1][i].Type == 0 && grid[j-1][i].Visited == 0 {
@@ -275,9 +309,16 @@ func UpdatePositions(grid [][]Cell, startX, endX, ydim int, boundaryMutex *sync.
 
 				currentCell.CurrentBreedTime++ // Increment the current breed time for the fish
 
+				// If there are empty cells around the fish, move to one of them
 				if len(freeSpace) > 0 {
 					randDirection := rnd.Intn(len(freeSpace))
 					chosenDirection := freeSpace[randDirection]
+
+					// If the fish wants to cross the boundary, lock the boundaryMutex
+					if chosenDirection.x > endX {
+						mutex = boundaryMutex
+						mutex.Lock()
+					}
 
 					// This is to check if the fish can breed
 					if currentCell.CurrentBreedTime >= currentCell.BreedTime {
@@ -301,6 +342,10 @@ func UpdatePositions(grid [][]Cell, startX, endX, ydim int, boundaryMutex *sync.
 							CurrentBreedTime: currentCell.CurrentBreedTime + 1,
 							Visited:          1,
 						}
+					}
+					// If the fish has moved across the boundary, unlock the boundaryMutex so other threads can access the data
+					if mutex != nil {
+						mutex.Unlock()
 					}
 				} else {
 					grid[j][i].CurrentBreedTime = currentCell.CurrentBreedTime // Increment the current breed time for the fish
@@ -354,6 +399,7 @@ func main() {
 
 	boundaryMutex := &sync.Mutex{} // This is to ensure that the threads don't access the same data at the same time
 
+	// These are the partitions that the threads will work on, they are split into two so that the threads can work on different parts of the grid, the left and right hand side of the grid
 	partitions := []Partition{
 		{startX: 0, endX: xdim / 2, BoundaryMutex: boundaryMutex},
 		{startX: xdim / 2, endX: xdim, BoundaryMutex: boundaryMutex},
@@ -383,6 +429,8 @@ func main() {
 		// Process partitions in parallel using goroutines
 		var wg sync.WaitGroup
 
+		// ChatGPT helped me with this part of the code as I was unsure how to run the threads in parallel
+		// It works by looping through the partitions that I created earlier and running the UpdatePositions function in parallel
 		for _, partition := range partitions {
 			wg.Add(1)
 			go func(part Partition) {
@@ -406,6 +454,6 @@ func main() {
 
 		rl.DrawFPS(10, 10)
 		rl.EndDrawing()
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(5 * time.Millisecond)
 	}
 }
