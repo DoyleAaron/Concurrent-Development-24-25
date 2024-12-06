@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"sync"
 	"time"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -48,6 +49,16 @@ type Cell struct {
 	StarveTime       int // The number of turns it takes for the shark to starve
 	CurrentBreedTime int // The current number of turns the fish or shark has been alive
 	Visited          int // This is to check if the cell has been visited and to ignore it if it has
+}
+
+// Partition struct
+// Parameters: startX, endX int, leftBoundaryMutex, rightBoundaryMutex *sync.Mutex
+// Returns: None
+// Description: This is to create a partition for the threads to work on
+type Partition struct {
+	startX        int
+	endX          int
+	BoundaryMutex *sync.Mutex
 }
 
 // DrawFish function
@@ -115,16 +126,16 @@ func InitialPositions(xdim, ydim, NumShark int, NumFish int, Starve int, FishBre
 // Parameters: grid [][]Cell, xdim, ydim int (current grid)
 // Returns: newGrid [][]Cell (updated grid)
 // Description: Updates the positions of the fish and sharks based off of the rules in the specification
-func UpdatePositions(grid [][]Cell, xdim, ydim int, rnd *rand.Rand) [][]Cell {
+func UpdatePositions(grid [][]Cell, startX, endX, ydim int, boundaryMutex *sync.Mutex, rnd *rand.Rand) [][]Cell {
 
 	// Reset visited flags for all cells
-	for i := 0; i < ydim; i++ {
+	for i := 0; i < endX; i++ {
 		for j := 0; j < xdim; j++ {
 			grid[i][j].Visited = 0
 		}
 	}
 
-	for i := 0; i < xdim; i++ {
+	for i := startX; i < endX; i++ {
 		for j := 0; j < ydim; j++ {
 			currentCell := grid[j][i] // Get the current cell and its information
 			if currentCell.Visited == 1 {
@@ -321,7 +332,7 @@ func main() {
 	grid := InitialPositions(xdim, ydim, NumShark, NumFish, Starve, FishBreed, SharkBreed, rnd)
 
 	// Open CSV file for writing
-	file, err := os.Create("./fps_log.csv")
+	file, err := os.Create("./2_thread_fps_log.csv")
 	if err != nil {
 		fmt.Println("Error creating CSV file:", err)
 		return
@@ -340,6 +351,13 @@ func main() {
 	// Time tracking for FPS logging
 	lastLogTime := time.Now()
 	index := 0 // This is so I can track the seconds for the FPS logging
+
+	boundaryMutex := &sync.Mutex{} // This is to ensure that the threads don't access the same data at the same time
+
+	partitions := []Partition{
+		{startX: 0, endX: xdim / 2, BoundaryMutex: boundaryMutex},
+		{startX: xdim / 2, endX: xdim, BoundaryMutex: boundaryMutex},
+	}
 
 	// Simulation loop
 	for !rl.WindowShouldClose() {
@@ -362,8 +380,18 @@ func main() {
 			}
 		}
 
-		// Update the grid
-		grid = UpdatePositions(grid, xdim, ydim, rnd)
+		// Process partitions in parallel using goroutines
+		var wg sync.WaitGroup
+
+		for _, partition := range partitions {
+			wg.Add(1)
+			go func(part Partition) {
+				defer wg.Done()
+				UpdatePositions(grid, part.startX, part.endX, ydim, part.BoundaryMutex, rnd)
+			}(partition)
+		}
+
+		wg.Wait() // Wait for all threads to complete
 
 		// Log FPS every second, chatGPT helped me with this part of the code as I was unsure how to write the FPS into the csv file
 		if time.Since(lastLogTime).Seconds() >= 1 {
