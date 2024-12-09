@@ -32,3 +32,12 @@
 ### Performance Monitoring
 
 ##### I have documented my findings in the Jupyter Notebook that I created but all I am doing to monitor this is running each of them for 30 seconds and storing the FPS every second into a CSV which I am then grpahing and noting my takes on the findings. I have used Jupyter notebooks with graphing before so this wasn't too bad to build.
+
+
+## Running The Docs
+
+##### I have my docs running in go doc for the single threaded version, all functions etc are the same here except they are abstracted out into different files due to issues with go doc, I only have this for the single threaded version as I was running into weird errors when trying to abstract the multi threaded version which was breaking the simulation, however the functions are the same and do mainly follow a similar logic, it is all still commented in the correct format in the code so you are able to use go doc *function name* to see the comments for those functions as they would appear in the go doc. The command that I used to run the go doc locally on my machine is $(go env GOPATH)/bin/godoc -http=:6060 . This command made the go doc run locally on my localhost however I have also provided screenshots in the WaTor folder of them as well. I have also included the html file for the docs if you wish to run that instead.
+
+## Running The Code
+
+##### To be able to run the code for each of versions, if you navigate to the folder where the wator file is and then use the command go run *file name* the file then should run as expected. If necessary you can use go build *package name* to build the files if needed, the jupyter notebook already has my findings outline in it so that shouldn't need to be run again.
